@@ -1,0 +1,35 @@
+{% extends 'fefu_lab/base.html' %}
+
+{% block title %}{{ course.title }} - FEFU Lab{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>{{ course.title }}</h1>
+    <p>{{ course.description }}</p>
+    
+    <div style="background: #ecf0f1; padding: 1.5rem; border-radius: 5px; margin: 1rem 0;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div style="padding: 0.5rem 0; border-bottom: 1px solid #bdc3c7;">
+                <strong>Продолжительность:</strong> {{ course.duration }}
+            </div>
+            <div style="padding: 0.5rem 0; border-bottom: 1px solid #bdc3c7;">
+                <strong>Уровень:</strong> {{ course.level }}
+            </div>
+            <div style="padding: 0.5rem 0; border-bottom: 1px solid #bdc3c7;">
+                <strong>Преподаватель:</strong> {{ course.instructor }}
+            </div>
+            <div style="padding: 0.5rem 0; border-bottom: 1px solid #bdc3c7;">
+                <strong>Стоимость:</strong> {{ course.price }}
+            </div>
+            <div style="padding: 0.5rem 0; border-bottom: 1px solid #bdc3c7;">
+                <strong>Slug:</strong> {{ course_slug }}
+            </div>
+            <div style="padding: 0.5rem 0; border-bottom: 1px solid #bdc3c7;">
+                <strong>Формат:</strong> Онлайн
+            </div>
+        </div>
+    </div>
+    
+    <a href="/" class="btn">На главную</a>
+</div>
+{% endblock %}

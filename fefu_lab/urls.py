@@ -8,5 +8,4 @@ urlpatterns = [
     path('course/<slug:course_slug>/', views.CourseView.as_view(), name='course_detail'),
 ]
 
-# Обработчик для несуществующих страниц
 handler404 = 'fefu_lab.views.custom_404'

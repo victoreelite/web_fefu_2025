@@ -1,0 +1,16 @@
+{% extends 'fefu_lab/base.html' %}
+
+{% block title %}Главная страница - FEFU Lab{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Welcome to FEFU Lab</h1>
+    <p>Это учебный тестовый проект.</p>
+    
+    <div style="margin-top: 2rem;">
+        <a href="/about/" class="btn">About</a>
+        <a href="/student/1/" class="btn">Students</a>
+        <a href="/course/python-basic/" class="btn">Course</a>
+    </div>
+</div>
+{% endblock %}
