@@ -6,6 +6,9 @@ urlpatterns = [
     path('about/', views.about_page, name='about'),
     path('student/<int:student_id>/', views.student_profile, name='student_profile'),
     path('course/<slug:course_slug>/', views.CourseView.as_view(), name='course_detail'),
+    path('feedback/', views.feedback_view, name='feedback'),
+    path('register/', views.register_view, name='register'),
+    path('login/', views.login_view, name='login'),
 ]
 
 handler404 = 'fefu_lab.views.custom_404'
