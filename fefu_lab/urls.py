@@ -12,3 +12,4 @@ urlpatterns = [
 ]
 
 handler404 = 'fefu_lab.views.custom_404'
+
