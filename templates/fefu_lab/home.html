@@ -1,16 +1,33 @@
-{% extends 'fefu_lab/base.html' %}
+{% extends "fefu_lab/base.html" %}
 
 {% block title %}Главная страница - FEFU Lab{% endblock %}
 
 {% block content %}
-<div class="card">
+<div class="student-info">
     <h1>Welcome to FEFU Lab</h1>
     <p>Это учебный тестовый проект.</p>
     
-    <div style="margin-top: 2rem;">
-        <a href="/about/" class="btn">About</a>
-        <a href="/student/1/" class="btn">Students</a>
-        <a href="/course/python-basic/" class="btn">Course</a>
+    <div class="info-grid">
+        <div>
+            <div class="info-item">
+                <a href="/about/" class="btn">About</a>
+            </div>
+            <div class="info-item">
+                <a href="/student/1/" class="btn">Students</a>
+            </div>
+            <div class="info-item">
+                <a href="/feedback/" class="btn">Feedback</a>
+            </div>
+        </div>
+        <div>
+            <h3>Course</h3>
+            <div class="info-item">
+                <a href="/course/python-basics/" class="btn">Python Basics</a>
+            </div>
+            <div class="info-item">
+                <a href="/course/web-security/" class="btn">Web Security</a>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
