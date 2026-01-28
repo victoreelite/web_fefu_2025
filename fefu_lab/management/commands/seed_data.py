@@ -3,7 +3,6 @@ from django.utils import timezone
 from fefu_lab.models import Student, Instructor, Course, Enrollment
 from datetime import date, timedelta
 import random
-
 class Command(BaseCommand):
     help = 'Заполняет базу данных тестовыми данными для университета'
     def handle(self, *args, **options):
