@@ -4,7 +4,21 @@
 <div class="student-info">
     <h1>Welcome to FEFU Lab</h1>
     <p>Это учебный тестовый проект.</p>
-    
+    <!-- СТАТИСТИКА ИЗ БД -->
+    <div class="stats-grid" style="margin: 2rem 0;">
+        <div class="stat-card">
+            <h3>{{ total_students }}</h3>
+            <p>Активных студентов</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ total_courses }}</h3>
+            <p>Доступных курсов</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ total_instructors }}</h3>
+            <p>Преподавателей</p>
+        </div>
+    </div>
     <div class="info-grid">
         <div>
             <div class="info-item">
@@ -16,52 +30,51 @@
             <div class="info-item">
                 <a href="/feedback/" class="btn">Feedback</a>
             </div>
+            <div class="info-item">
+                <a href="/register/" class="btn">Register</a>
+            </div>
         </div>
         <div>
-            <h3>Course</h3>
-            <div class="info-item">
-                <a href="/course/python-basic/" class="btn">Python Basics</a>
-            </div>
-            <div class="info-item">
-                <a href="/course/web-development/" class="btn">Web Security</a>
-            </div>
+            <h3>Courses from Database</h3>
+            <!-- ДИНАМИЧЕСКИЕ КУРСЫ ИЗ БД -->
+            {% if recent_courses %}
+                {% for course in recent_courses %}
+                <div class="info-item">
+                    <a href="{% url 'course_detail' course.slug %}" class="btn">
+                        {{ course.title|truncatechars:25 }}
+                    </a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="info-item">
+                    <p class="no-data">Курсы пока не добавлены</p>
+                    <a href="/admin/fefu_lab/course/add/" class="btn-small">Добавить курс</a>
+                </div>
+            {% endif %}
         </div>
     </div>
+    <!-- НОВЫЕ КУРСЫ (КАРТОЧКИ) -->
+    {% if recent_courses %}
+    <div class="recent-courses" style="margin-top: 3rem;">
+        <h2>New Courses</h2>
+        <div class="courses-grid">
+            {% for course in recent_courses %}
+            <div class="course-card">
+                <h3>{{ course.title }}</h3>
+                <p><strong>Instructor:</strong> 
+                    {% if course.instructor %}
+                        {{ course.instructor.full_name }}
+                    {% else %}
+                        Not assigned
+                    {% endif %}
+                </p>
+                <p><strong>Duration:</strong> {{ course.duration }} hours</p>
+                <p><strong>Level:</strong> {{ course.get_level_display }}</p>
+                <a href="{% url 'course_detail' course.slug %}" class="btn">Details</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
-<div class="stats-grid">
-    <div class="stat-card">
-        <h3>{{ total_students }}</h3>
-        <p>Активных студентов</p>
-    </div>
-    <div class="stat-card">
-        <h3>{{ total_courses }}</h3>
-        <p>Доступных курсов</p>
-    </div>
-    <div class="stat-card">
-        <h3>{{ total_instructors }}</h3>
-        <p>Преподавателей</p>
-    </div>
-</div>
-{% if recent_courses %}
-<div class="recent-courses">
-    <h2>Новые курсы</h2>
-    <div class="courses-grid">
-        {% for course in recent_courses %}
-        <div class="course-card">
-            <h3>{{ course.title }}</h3>
-            <p><strong>Преподаватель:</strong> 
-                {% if course.instructor %}
-                    {{ course.instructor.full_name }}
-                {% else %}
-                    Не назначен
-                {% endif %}
-            </p>
-            <p><strong>Продолжительность:</strong> {{ course.duration }} часов</p>
-            <p><strong>Уровень:</strong> {{ course.get_level_display }}</p>
-            <a href="{% url 'course_detail' course.slug %}" class="btn">Подробнее</a>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
