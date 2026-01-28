@@ -118,8 +118,8 @@ class Command(BaseCommand):
                 f'   • {len(courses)} курсов\n'
                 f'   • {len(enrollments)} записей на курсы\n'
                 f'\nДля просмотра данных:\n'
-                f'1. Запусти сервер: python manage.py runserver\n'
-                f'2. Откри http://127.0.0.1:8000/\n'
+                f'1. Запустить сервер: python manage.py runserver\n'
+                f'2. Открыть http://127.0.0.1:8000/\n'
                 f'3. Админка: http://127.0.0.1:8000/admin/\n'
                 f'   (логин: созданный при createsuperuser)'
             )
