@@ -1,32 +1,50 @@
 {% extends 'fefu_lab/base.html' %}
-
 {% block title %}Студент {{ student_id }} - FEFU Lab{% endblock %}
-
 {% block content %}
-<div class="student-info">
-    <h1>Профиль студента</h1>
-    <div class="info-grid">
-        <div>
+<div class="student-card">
+    <div class="student-info">
+        <div class="info-grid">
             <div class="info-item">
-                <strong>ID студента:</strong> {{ student_id }}
+                <strong>ID студента:</strong> {{ student.id }}
             </div>
             <div class="info-item">
-                <strong>Имя:</strong> {{ student_name }}
+                <strong>ФИО:</strong> {{ student.full_name }}
             </div>
             <div class="info-item">
-                <strong>Группа:</strong> {{ group }}
+                <strong>Email:</strong> {{ student.email }}
             </div>
             <div class="info-item">
-                <strong>Факультет:</strong> {{ faculty }}
+                <strong>Факультет:</strong> {{ student.get_faculty_display_name }}
             </div>
             <div class="info-item">
-                <strong>Курс:</strong> {{ course }}
+                <strong>Дата рождения:</strong> 
+                {% if student.birth_date %}
+                    {{ student.birth_date|date:"d.m.Y" }}
+                {% else %}
+                    Не указана
+                {% endif %}
             </div>
             <div class="info-item">
                 <strong>Статус:</strong> {{ status }}
             </div>
         </div>
     </div>
-    <a href="/" class="btn">На главную</a>
+    {% if enrollments %}
+    <div class="enrollments-section">
+        <h3>Активные записи на курсы:</h3>
+        <div class="enrollments-list">
+            {% for enrollment in enrollments %}
+            <div class="enrollment-item">
+                <h4>{{ enrollment.course.title }}</h4>
+                <p>Статус: {{ enrollment.get_status_display }}</p>
+                <p>Дата записи: {{ enrollment.enrollment_date|date:"d.m.Y" }}</p>
+                <a href="{% url 'course_detail' enrollment.course.slug %}" class="btn-small">Перейти к курсу</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <p class="no-data">Студент не записан ни на один курс.</p>
+    {% endif %}
 </div>
 {% endblock %}
