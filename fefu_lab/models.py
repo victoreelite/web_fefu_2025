@@ -1,6 +1,9 @@
 from django.db import models
 from django.urls import reverse
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class Instructor(models.Model):
     #Модель преподавателя
@@ -30,6 +33,20 @@ class Student(models.Model):
         ('DS', 'Наука о данных'),
         ('WEB', 'Веб-технологии'),
     ]
+    ROLE_CHOICES = [
+        ('STUDENT', 'Студент'),
+        ('TEACHER', 'Преподаватель'),
+        ('ADMIN', 'Администратор'),
+    ]
+    # Связь со встроенной моделью User
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='student_profile',
+        verbose_name='Пользователь',
+        null=True,  # Временно null для миграции
+        blank=True
+    )
     first_name = models.CharField(max_length=100, verbose_name='Имя')
     last_name = models.CharField(max_length=100, verbose_name='Фамилия')
     email = models.EmailField(unique=True, verbose_name='Email')
@@ -40,8 +57,23 @@ class Student(models.Model):
         default='CS',
         verbose_name='Факультет'
     )
+    role = models.CharField(
+        max_length=10,
+        choices=ROLE_CHOICES,
+        default='STUDENT',
+        verbose_name='Роль'
+    )
+    phone = models.CharField(max_length=20, blank=True, verbose_name='Телефон')
+    bio = models.TextField(blank=True, verbose_name='О себе')
+    avatar = models.ImageField(
+        upload_to='avatars/',
+        blank=True,
+        null=True,
+        verbose_name='Аватар'
+    )
     is_active = models.BooleanField(default=True, verbose_name='Активен')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
     class Meta:
         verbose_name = 'Студент'
         verbose_name_plural = 'Студенты'
@@ -50,9 +82,35 @@ class Student(models.Model):
         return f"{self.last_name} {self.first_name}"
     @property
     def full_name(self):
+        if self.user:
+            return f"{self.user.first_name} {self.user.last_name}"
         return f"{self.first_name} {self.last_name}"
+    def get_absolute_url(self):
+        return reverse('profile')
+    def is_teacher(self):
+        return self.role == 'TEACHER'
+    def is_admin(self):
+        return self.role == 'ADMIN'
     def get_faculty_display_name(self):
         return dict(self.FACULTY_CHOICES).get(self.faculty, 'Неизвестно')
+
+# Сигнал для автоматического создания профиля при создании User
+@receiver(post_save, sender=User)
+def create_student_profile(sender, instance, created, **kwargs):
+    if created:
+        Student.objects.create(
+            user=instance,
+            first_name=instance.first_name or '',
+            last_name=instance.last_name or '',
+            email=instance.email or '',
+            # Устанавливаем роль staff/superuser в админы
+            role='ADMIN' if (instance.is_staff or instance.is_superuser) else 'STUDENT'
+        )
+
+@receiver(post_save, sender=User)
+def save_student_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'student_profile'):
+        instance.student_profile.save()
 
 class Course(models.Model):
     #Модель курса
