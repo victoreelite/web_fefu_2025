@@ -1,6 +1,157 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import UserProfile
+from .models import UserProfile, Student
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.models import User
+
+class CustomUserCreationForm(UserCreationForm):
+    #Форма регистрации с email вместо username
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={'class': 'form-control'}),
+        label='Email'
+    )
+    first_name = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+        label='Имя',
+        required=True
+    )
+    last_name = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+        label='Фамилия',
+        required=True
+    )
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'password1', 'password2']
+        widgets = {
+            'password1': forms.PasswordInput(attrs={'class': 'form-control'}),
+            'password2': forms.PasswordInput(attrs={'class': 'form-control'}),
+        }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Убираем username поле
+        self.fields.pop('username', None)
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        # Используем email как username
+        user.username = self.cleaned_data['email']
+        user.email = self.cleaned_data['email']
+        user.first_name = self.cleaned_data['first_name']
+        user.last_name = self.cleaned_data['last_name']
+        if commit:
+            user.save()
+        return user
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise ValidationError("Пользователь с таким email уже существует")
+        return email
+
+class CustomAuthenticationForm(AuthenticationForm):
+    #Форма входа с email
+    username = forms.CharField(
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+        label='Email'
+    )
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        label='Пароль'
+    )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].label = 'Email'
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        # Проверяем что это email или username
+        if '@' not in username:
+            # Если нет @, ищем по username
+            if not User.objects.filter(username=username).exists():
+                raise ValidationError("Пользователь не найден")
+        return username
+
+class ProfileUpdateForm(forms.ModelForm):
+    #Форма обновления профиля студента
+    first_name = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+        label='Имя'
+    )
+    last_name = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+        label='Фамилия'
+    )
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={'class': 'form-control'}),
+        label='Email'
+    )
+    class Meta:
+        model = Student
+        fields = ['first_name', 'last_name', 'email', 'phone', 'bio', 'avatar', 'faculty']
+        widgets = {
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'faculty': forms.Select(attrs={'class': 'form-control'}),
+        }
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.user:
+            self.fields['first_name'].initial = self.instance.user.first_name
+            self.fields['last_name'].initial = self.instance.user.last_name
+            self.fields['email'].initial = self.instance.user.email
+    def save(self, commit=True):
+        student = super().save(commit=False)
+        # Обновляем связанного User
+        if student.user:
+            student.user.first_name = self.cleaned_data['first_name']
+            student.user.last_name = self.cleaned_data['last_name']
+            student.user.email = self.cleaned_data['email']
+            if commit:
+                student.user.save()
+        if commit:
+            student.save()
+        return student
+
+class PasswordChangeCustomForm(forms.Form):
+    #Форма смены пароля
+    old_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        label='Текущий пароль'
+    )
+    new_password1 = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        label='Новый пароль',
+        min_length=8
+    )
+    new_password2 = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        label='Подтверждение пароля'
+    )
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+    def clean_old_password(self):
+        old_password = self.cleaned_data.get('old_password')
+        if not self.user.check_password(old_password):
+            raise ValidationError("Неверный текущий пароль")
+        return old_password
+    def clean_new_password2(self):
+        password1 = self.cleaned_data.get('new_password1')
+        password2 = self.cleaned_data.get('new_password2')
+
+        if password1 and password2 and password1 != password2:
+            raise ValidationError("Пароли не совпадают")
+        # Проверка сложности пароля
+        if len(password1) < 8:
+            raise ValidationError("Пароль должен содержать минимум 8 символов")
+        return password2
+    def save(self):
+        self.user.set_password(self.cleaned_data['new_password1'])
+        self.user.save()
 
 class FeedbackForm(forms.Form):
     name = forms.CharField(
