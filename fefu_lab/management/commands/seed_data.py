@@ -1,186 +1,178 @@
 from django.core.management.base import BaseCommand
-from django.utils import timezone
-from fefu_lab.models import Student, Instructor, Course, Enrollment
-from datetime import date, timedelta
-import random
 from django.contrib.auth.models import User
-
+from django.db.models.signals import post_save
+from fefu_lab.models import Student, Instructor, Course, Enrollment
+from datetime import date
+import random
 
 class Command(BaseCommand):
-    help = 'Заполняет базу данных тестовыми данными для университета'
-    def handle(self, *args, **options):
-        self.stdout.write('Начинаю заполнение базы данных тестовыми данными...')
-        # Очистка существующих данных
-        Enrollment.objects.all().delete()
-        Course.objects.all().delete()
-        Student.objects.all().delete()
-        Instructor.objects.all().delete()
-        # Удаляем только тестовых пользователей (не суперпользователей)
-        test_users = User.objects.filter(
-            email__contains='@fefu.ru',
-            is_superuser=False,
-            is_staff=False
-        )
-        test_users.delete()
-        self.stdout.write('Создание преподавателей и их пользователей...')
-        instructors = []
-        instructors_data = [
-            ('Иван', 'Петров', 'i.petrov@fefu.ru', 'Кибербезопасность и криптография', 'Доктор технических наук'),
-            ('Мария', 'Сидорова', 'm.sidorova@fefu.ru', 'Веб-технологии и разработка', 'Кандидат технических наук'),
-            ('Ольга', 'Козлова', 'o.kozlova@fefu.ru', 'Искусственный интеллект и машинное обучение',
-             'Доктор физико-математических наук'),
-        ]
-        for first_name, last_name, email, specialization, degree in instructors_data:
-            # Создаем пользователя Django
-            user = User.objects.create_user(
-                username=email,
-                email=email,
-                password='teacher123',  # Простой пароль для теста
-                first_name=first_name,
-                last_name=last_name
-            )
-            # Создаем преподавателя
-            instructor = Instructor(
-                first_name=first_name,
-                last_name=last_name,
-                email=email,
-                specialization=specialization,
-                degree=degree,
-                is_active=True
-            )
-            instructor.save()
-            instructors.append(instructor)
-            self.stdout.write(f'  Создан преподаватель: {instructor}')
-        self.stdout.write('Создание студентов и их пользователей...')
-        students = []
-        students_data = [
-            ('Анна', 'Иванова', 'anna.ivanova@fefu.ru', date(2000, 5, 15), 'CS'),
-            ('Дмитрий', 'Смирнов', 'dmitry.smirnov@fefu.ru', date(1999, 8, 22), 'SE'),
-            ('Екатерина', 'Попова', 'ekaterina.popova@fefu.ru', date(2001, 3, 10), 'IT'),
-            ('Михаил', 'Васильев', 'mikhail.vasilyev@fefu.ru', date(2000, 11, 5), 'DS'),
-            ('Ольга', 'Новикова', 'olga.novikova@fefu.ru', date(1999, 12, 30), 'WEB'),
-            ('Артем', 'Федоров', 'artem.fedorov@fefu.ru', date(2001, 7, 18), 'CS'),
-            ('София', 'Морозова', 'sofia.morozova@fefu.ru', date(2002, 2, 14), 'IT'),
-        ]
-        for first_name, last_name, email, birth_date, faculty in students_data:
-            # Создаем пользователя Django
-            user = User.objects.create_user(
-                username=email,
-                email=email,
-                password='user',
-                first_name=first_name,
-                last_name=last_name
-            )
-            # Создаем студента
-            student = Student(
-                user=user,  # Связываем с пользователем
-                first_name=first_name,
-                last_name=last_name,
-                email=email,
-                birth_date=birth_date,
-                faculty=faculty,
-                role='STUDENT',
-                phone=f'+7 914 {random.randint(100, 999)} {random.randint(1000, 9999)}',
-                bio=f'Студент факультета {dict(Student.FACULTY_CHOICES).get(faculty)}. Увлекаюсь программированием и веб-разработкой.',
-                is_active=True
-            )
-            student.save()
-            students.append(student)
-            self.stdout.write(f'  Создан студент: {student}')
-        self.stdout.write('Создание курсов...')
-        courses = []
-        courses_data = [
-            ('Основы Python для начинающих', 'python-basics',
-             'Базовый курс по программированию на Python. Изучение синтаксиса, типов данных и основных конструкций языка.',
-             36, instructors[0], 'BEGINNER', 25, 0),
-            ('Продвинутая кибербезопасность', 'cybersecurity-advanced',
-             'Изучение современных методов защиты информации: криптография, анализ уязвимостей, пентестинг.',
-             48, instructors[0], 'ADVANCED', 20, 15000),
-            ('Веб-разработка на Django', 'django-web-dev',
-             'Полный курс по созданию веб-приложений с использованием Django, REST API и современных фронтенд-технологий.',
-             42, instructors[1], 'INTERMEDIATE', 30, 12000),
-            ('Машинное обучение на практике', 'ml-practice',
-             'Прикладной курс по машинному обучению: от предобработки данных до deployment моделей.',
-             40, instructors[2], 'ADVANCED', 15, 18000),
-            ('JavaScript и современные фреймворки', 'js-frameworks',
-             'Изучение современного JavaScript и популярных фреймворков: React, Vue.js, Angular.',
-             35, instructors[1], 'INTERMEDIATE', 25, 10000),
-        ]
-        for title, slug, description, duration, instructor, level, max_students, price in courses_data:
-            course = Course(
-                title=title,
-                slug=slug,
-                description=description,
-                duration=duration,
-                instructor=instructor,
-                level=level,
-                max_students=max_students,
-                price=price,
-                is_active=True
-            )
-            course.save()
-            courses.append(course)
-            self.stdout.write(f'  Создан курс: {course}')
-        self.stdout.write('Создание записей на курсы...')
-        enrollments = []
-        # Каждый студент записывается на 1-3 случайных курса
-        for student in students:
-            num_courses = random.randint(1, 3)
-            selected_courses = random.sample(courses, min(num_courses, len(courses)))
-            for course in selected_courses:
-                enrollment = Enrollment(
-                    student=student,
-                    course=course,
-                    status='ACTIVE'
-                )
-                enrollment.save()
-                enrollments.append(enrollment)
-                self.stdout.write(f'  Запись: {student} → {course}')
-        # Создаем тестового администратора
-        self.stdout.write('Создание тестового администратора...')
-        admin_user = User.objects.create_user(
-            username='admin',
-            email='admin@admin.admin',
-            password='admin',
-            first_name='Администратор',
-            last_name='Системы',
-            is_staff=True,
-            is_superuser=False
-        )
+    help = 'Заполняет базу данных тестовыми данными'
 
-        admin_student = Student(
-            user=admin_user,
-            first_name='Администратор',
-            last_name='Системы',
-            email='admin@admin.admin',
-            faculty='CS',
-            role='ADMIN',
-            phone='+7 999 123 4567',
-            bio='Системный администратор платформы FEFU Lab',
-            is_active=True
-        )
-        admin_student.save()
-        self.stdout.write(
-            self.style.SUCCESS(
-                f'\nУспешно создано:\n'
-                f'   • {len(instructors)} преподавателей с пользователями\n'
-                f'   • {len(students)} студентов с пользователями\n'
-                f'   • {len(courses)} курсов\n'
-                f'   • {len(enrollments)} записей на курсы\n'
-                f'   • 1 администратор\n'
-                f'\nТестовые учетные данные:\n'
-                f'Преподаватели (пароль: teacher123):\n'
-                f'   • i.petrov@fefu.ru\n'
-                f'   • m.sidorova@fefu.ru\n'
-                f'   • o.kozlova@fefu.ru\n'
-                f'\nСтуденты (пароль: student123):\n'
-                f'   • anna.ivanova@fefu.ru\n'
-                f'   • dmitry.smirnov@fefu.ru\n'
-                f'   • ekaterina.popova@fefu.ru\n'
-                f'   • ... и другие\n'
-                f'\nАдминистратор:\n'
-                f'   • Логин: admin@fefu.ru\n'
-                f'   • Пароль: admin123\n'
-                f'\nДля входа используйте email в качестве логина.\n'
+    def handle(self, *args, **options):
+        self.stdout.write('Начинаю заполнение базы данных...')
+        # Отключаем сигналы
+        from fefu_lab.models import create_student_profile, save_student_profile
+        post_save.disconnect(create_student_profile, sender=User)
+        post_save.disconnect(save_student_profile, sender=User)
+        try:
+            self.stdout.write('Очистка старых данных...')
+            # 1. Удаляем
+            Enrollment.objects.all().delete()
+            Course.objects.all().delete()
+            Instructor.objects.all().delete()
+            Student.objects.all().delete()
+            # 2. Удаляем всех пользователей
+            User.objects.all().delete()
+            # 3. Создаем студентов
+            self.stdout.write('\nСОЗДАЕМ СТУДЕНТОВ...')
+            students_data = [
+                ('Анна', 'Иванова', 'anna.ivanova@fefu.ru', date(2000, 5, 15), 'CS', 'student123'),
+                ('Дмитрий', 'Смирнов', 'dmitry.smirnov@fefu.ru', date(1999, 8, 22), 'SE', 'student123'),
+                ('Екатерина', 'Попова', 'ekaterina.popova@fefu.ru', date(2001, 3, 10), 'IT', 'student123'),
+                ('Михаил', 'Васильев', 'mikhail.vasilyev@fefu.ru', date(2000, 11, 5), 'DS', 'student123'),
+                ('Ольга', 'Новикова', 'olga.novikova@fefu.ru', date(1999, 12, 30), 'WEB', 'student123'),
+            ]
+            students = []
+            for first_name, last_name, email, birth_date, faculty, password in students_data:
+                # Создаём пользователя
+                user = User.objects.create_user(
+                    username=email,
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    is_active=True
+                )
+                # Теперь создаём Student вручную
+                student = Student.objects.create(
+                    user=user,
+                    first_name=first_name,
+                    last_name=last_name,
+                    email=email,
+                    birth_date=birth_date,
+                    faculty=faculty,
+                    role='STUDENT',
+                    phone=f'+7 914 {random.randint(100, 999)} {random.randint(1000, 9999)}',
+                    bio=f'Студент факультета {faculty}',
+                    is_active=True
+                )
+                students.append(student)
+                self.stdout.write(f'✓ Студент: {email} / {password}')
+            # 4. Создаем преподавателей
+            self.stdout.write('\nСОЗДАЕМ ПРЕПОДАВАТЕЛЕЙ...')
+            teachers_data = [
+                ('Иван', 'Петров', 'i.petrov@fefu.ru', 'Кибербезопасность', 'Доктор наук', 'teacher123'),
+                ('Мария', 'Сидорова', 'm.sidorova@fefu.ru', 'Веб-разработка', 'Кандидат наук', 'teacher123'),
+                ('Алексей', 'Козлов', 'a.kozlov@fefu.ru', 'Сетевые технологии', 'Кандидат наук', 'teacher123'),
+            ]
+            instructors = []
+            for first_name, last_name, email, specialization, degree, password in teachers_data:
+                # Создаём пользователя
+                user = User.objects.create_user(
+                    username=email,
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    is_active=True
+                )
+                # Создаём Student с ролью TEACHER
+                Student.objects.create(
+                    user=user,
+                    first_name=first_name,
+                    last_name=last_name,
+                    email=email,
+                    faculty='CS',
+                    role='TEACHER',
+                    phone=f'+7 914 {random.randint(100, 999)} {random.randint(1000, 9999)}',
+                    bio=f'Преподаватель {specialization}',
+                    is_active=True
+                )
+                # Создаём Instructor для курсов
+                instructor = Instructor.objects.create(
+                    first_name=first_name,
+                    last_name=last_name,
+                    email=email,
+                    specialization=specialization,
+                    degree=degree,
+                    is_active=True
+                )
+                instructors.append(instructor)
+                self.stdout.write(f'✓ Преподаватель: {email} / {password}')
+            # 5. Создаем курсы
+            self.stdout.write('\nСОЗДАЕМ КУРСЫ...')
+            courses_data = [
+                ('Основы Python', 'python-basics', 'Базовый курс Python',
+                 36, instructors[0], 'BEGINNER', 25, 0),
+                ('Веб-разработка на Django', 'django-web', 'Создание веб-приложений',
+                 48, instructors[1], 'INTERMEDIATE', 20, 12000),
+                ('Сетевая безопасность', 'network-security', 'Защита сетей',
+                 40, instructors[2], 'ADVANCED', 15, 15000),
+            ]
+            courses = []
+            for title, slug, description, hours, instructor, level, max_students, price in courses_data:
+                course = Course.objects.create(
+                    title=title,
+                    slug=slug,
+                    description=description,
+                    duration=hours,
+                    instructor=instructor,
+                    level=level,
+                    max_students=max_students,
+                    price=price,
+                    is_active=True
+                )
+                courses.append(course)
+                self.stdout.write(f'✓ Курс: {title}')
+            # 6. Записи на курсы
+            self.stdout.write('\n=== ЗАПИСИ НА КУРСЫ ===')
+            enrollments = []
+            for student in students:
+                num = random.randint(1, 2)
+                selected = random.sample(courses, min(num, len(courses)))
+                for course in selected:
+                    enrollment = Enrollment.objects.create(
+                        student=student,
+                        course=course,
+                        status='ACTIVE'
+                    )
+                    enrollments.append(enrollment)
+                self.stdout.write(f'✓ {student.first_name} записан на {len(selected)} курс(ов)')
+            # 7. Администратор
+            self.stdout.write('\nСОЗДАЕМ АДМИНИСТРАТОРА...')
+            admin_user = User.objects.create_user(
+                username='admin@fefu.ru',
+                email='admin@fefu.ru',
+                password='admin123',
+                first_name='Админ',
+                last_name='Системы',
+                is_staff=True,
+                is_active=True
             )
-        )
+            Student.objects.create(
+                user=admin_user,
+                first_name='Админ',
+                last_name='Системы',
+                email='admin@fefu.ru',
+                faculty='CS',
+                role='ADMIN',
+                phone='+7 999 123 4567',
+                bio='Системный администратор',
+                is_active=True
+            )
+            self.stdout.write(f'✓ Администратор: admin@fefu.ru / admin123')
+            # 8. Включаем сигналы
+            post_save.connect(create_student_profile, sender=User)
+            post_save.connect(save_student_profile, sender=User)
+            self.stdout.write(self.style.SUCCESS(
+                'Скрипт выполнен. Тестовые данные для входа:\n'
+                '1. anna.ivanova@fefu.ru / student123\n'
+                '2. i.petrov@fefu.ru / teacher123\n'
+                '3. admin@fefu.ru / admin123'
+            ))
+            self.stdout.write('=' * 50)
+        except Exception as e:
+            post_save.connect(create_student_profile, sender=User)
+            post_save.connect(save_student_profile, sender=User)
+            self.stdout.write(self.style.ERROR(f'❌ ОШИБКА: {e}'))
+            raise

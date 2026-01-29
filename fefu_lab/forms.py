@@ -66,11 +66,19 @@ class CustomAuthenticationForm(AuthenticationForm):
     def clean_username(self):
         username = self.cleaned_data.get('username')
         # Проверяем что это email или username
-        if '@' not in username:
-            # Если нет @, ищем по username
+        # Ищем пользователя по email (так как используем email как username)
+        if '@' in username:
+            # Ищем по email
+            try:
+                user = User.objects.get(email=username)
+                return user.username
+            except User.DoesNotExist:
+                raise ValidationError("Пользователь с таким email не найден")
+        else:
+            # Ищем по username
             if not User.objects.filter(username=username).exists():
                 raise ValidationError("Пользователь не найден")
-        return username
+            return username
 
 class ProfileUpdateForm(forms.ModelForm):
     #Форма обновления профиля студента
