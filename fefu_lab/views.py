@@ -133,6 +133,7 @@ def logout_view(request):
         messages.success(request, 'Вы успешно вышли из системы')
     return redirect('home')
 
+
 @login_required
 def profile_view(request):
     #Личный кабинет пользователя
@@ -154,7 +155,12 @@ def profile_view(request):
     # Получаем курсы преподавателя
     teacher_courses = None
     if student_profile.role == 'TEACHER':
-        teacher_courses = student_profile.courses.all()
+        # Ищем преподавателя по email
+        try:
+            instructor = Instructor.objects.get(email=student_profile.email)
+            teacher_courses = instructor.courses.all()  # Теперь работает!
+        except Instructor.DoesNotExist:
+            teacher_courses = Course.objects.none()  # Пустой QuerySet если нет преподавателя
     return render(request, 'fefu_lab/registration/profile.html', {
         'student': student_profile,
         'enrollments': enrollments,
@@ -212,12 +218,18 @@ def is_admin(user):
     except Student.DoesNotExist:
         return False
 
+
 @login_required
 @user_passes_test(is_teacher, login_url='/login/')
 def teacher_dashboard_view(request):
     #Дашборд преподавателя
     student_profile = request.user.student_profile
-    courses = student_profile.courses.all()
+    #Ищем курсы через модель Instructor
+    try:
+        instructor = Instructor.objects.get(email=student_profile.email)
+        courses = instructor.courses.all()  # Курсы преподавателя
+    except Instructor.DoesNotExist:
+        courses = Course.objects.none()  # Пустой QuerySet
     # Собираем статистику по курсам
     course_stats = []
     for course in courses:
