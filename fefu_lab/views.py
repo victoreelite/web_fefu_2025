@@ -48,6 +48,15 @@ def student_profile(request, student_id):
     except Student.DoesNotExist:
         raise Http404("Студент не найден")
 
+def student_profile_context(request):
+    #Добавляет student_profile в контекст если пользователь авторизован
+    if request.user.is_authenticated:
+        try:
+            return {'student_profile': request.user.student_profile}
+        except:
+            return {}
+    return {}
+
 class CourseView(View):
     def get(self, request, course_slug):
         try:
