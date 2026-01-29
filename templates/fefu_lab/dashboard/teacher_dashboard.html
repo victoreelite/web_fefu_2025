@@ -1,0 +1,101 @@
+{% extends "fefu_lab/base.html" %}
+{% block title %}Дашборд преподавателя{% endblock %}
+{% block heading %}Дашборд преподавателя{% endblock %}
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h2>Добро пожаловать, {{ user.student_profile.full_name }}!</h2>
+        <p class="role-badge">Преподаватель</p>
+    </div>
+    <div class="dashboard-stats">
+        <div class="stat-card-dashboard">
+            <h3>{{ course_stats|length }}</h3>
+            <p>Курсов</p>
+        </div>
+        <div class="stat-card-dashboard">
+            <h3>
+                {% with total=0 %}
+                    {% for stat in course_stats %}
+                        {% with total=total|add:stat.enrollments_count %}
+                        {% endwith %}
+                    {% endfor %}
+                    {{ total }}
+                {% endwith %}
+            </h3>
+            <p>Студентов всего</p>
+        </div>
+        <div class="stat-card-dashboard">
+            <h3>
+                {% with active=0 %}
+                    {% for stat in course_stats %}
+                        {% if stat.available_spots > 0 %}
+                            {% with active=active|add:1 %}
+                            {% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ active }}
+                {% endwith %}
+            </h3>
+            <p>Курсов с местами</p>
+        </div>
+    </div>
+    <div class="dashboard-table">
+        <h3>Мои курсы</h3>
+        {% if course_stats %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Курс</th>
+                    <th>Студентов</th>
+                    <th>Свободно мест</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in course_stats %}
+                <tr>
+                    <td>
+                        <strong>{{ stat.course.title }}</strong><br>
+                        <small>{{ stat.course.get_level_display }}</small>
+                    </td>
+                    <td>{{ stat.enrollments_count }} / {{ stat.course.max_students }}</td>
+                    <td>
+                        {% if stat.available_spots > 0 %}
+                            <span class="available">{{ stat.available_spots }} мест</span>
+                        {% else %}
+                            <span class="full">Заполнен</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if stat.course.is_active %}
+                            <span class="active">Активен</span>
+                        {% else %}
+                            <span class="inactive">Неактивен</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'course_detail' stat.course.slug %}" class="btn btn-small">Просмотр</a>
+                        <a href="/admin/fefu_lab/course/{{ stat.course.id }}/change/" class="btn btn-small btn-secondary" target="_blank">Редактировать</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="no-data">
+            <p>У вас пока нет курсов для преподавания.</p>
+            <a href="/admin/fefu_lab/course/add/" class="btn" target="_blank">Создать курс</a>
+        </div>
+        {% endif %}
+    </div>
+    <div class="quick-actions">
+        <h3>Быстрые действия</h3>
+        <div class="action-buttons">
+            <a href="/admin/fefu_lab/course/add/" class="btn btn-primary" target="_blank">Создать новый курс</a>
+            <a href="/admin/fefu_lab/enrollment/" class="btn btn-secondary" target="_blank">Управление записями</a>
+            <a href="{% url 'profile_edit' %}" class="btn btn-outline">Редактировать профиль</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "fefu_lab/base.html" %}
+{% block title %}Защищенная страница{% endblock %}
+{% block heading %}Защищенная страница{% endblock %}
+{% block content %}
+<div class="protected-page">
+    <div class="protected-content">
+        <div class="success-icon">✓</div>
+        <h2>Доступ разрешен!</h2>
+        <p>Вы успешно прошли аутентификацию и имеете доступ к этой странице.</p>
+        <div class="user-info">
+            <p><strong>Пользователь:</strong> {{ user.username }}</p>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Дата регистрации:</strong> {{ user.date_joined|date:"d.m.Y" }}</p>
+            <p><strong>Последний вход:</strong> {{ user.last_login|date:"d.m.Y H:i" }}</p>
+            {% if user.student_profile %}
+                <p><strong>Роль:</strong> {{ user.student_profile.get_role_display }}</p>
+                <p><strong>Факультет:</strong> {{ user.student_profile.get_faculty_display_name }}</p>
+            {% endif %}
+        </div>
+        <div class="action-links">
+            <a href="{% url 'profile' %}" class="btn btn-primary">В личный кабинет</a>
+            <a href="{% url 'home' %}" class="btn btn-secondary">На главную</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

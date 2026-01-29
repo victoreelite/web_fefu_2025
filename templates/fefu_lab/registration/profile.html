@@ -1,0 +1,79 @@
+{% extends "fefu_lab/base.html" %}
+{% block title %}Личный кабинет{% endblock %}
+{% block heading %}Личный кабинет{% endblock %}
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            {% if student.avatar %}
+                <img src="{{ student.avatar.url }}" alt="Аватар {{ student.full_name }}" class="avatar-img">
+            {% else %}
+                <div class="avatar-placeholder">{{ student.full_name|first|upper }}</div>
+            {% endif %}
+        </div>
+        <div class="profile-info">
+            <h2>{{ student.full_name }}</h2>
+            <p class="profile-role">{{ student.get_role_display }}</p>
+            <p class="profile-faculty">{{ student.get_faculty_display_name }}</p>
+            <div class="profile-actions">
+                <a href="{% url 'profile_edit' %}" class="btn btn-secondary">Редактировать профиль</a>
+                <a href="{% url 'password_change' %}" class="btn btn-outline">Сменить пароль</a>
+                {% if student.is_admin or user.is_staff %}
+                    <a href="/admin/" class="btn btn-admin" target="_blank">Админ панель</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="profile-details">
+        <div class="detail-card">
+            <h3>Контактная информация</h3>
+            <div class="detail-item">
+                <strong>Email:</strong> {{ student.email }}
+            </div>
+            {% if student.phone %}
+            <div class="detail-item">
+                <strong>Телефон:</strong> {{ student.phone }}
+            </div>
+            {% endif %}
+            {% if student.birth_date %}
+            <div class="detail-item">
+                <strong>Дата рождения:</strong> {{ student.birth_date|date:"d.m.Y" }}
+            </div>
+            {% endif %}
+        </div>
+        <div class="detail-card">
+            <h3>О себе</h3>
+            {% if student.bio %}
+                <p>{{ student.bio }}</p>
+            {% else %}
+                <p class="text-muted">Информация не заполнена</p>
+            {% endif %}
+        </div>
+    </div>
+    {% if student.role == 'STUDENT' and enrollments %}
+    <div class="profile-courses">
+        <h3>Мои курсы</h3>
+        <div class="courses-list">
+            {% for enrollment in enrollments %}
+            <div class="course-item">
+                <h4>{{ enrollment.course.title }}</h4>
+                <p>Статус: {{ enrollment.get_status_display }}</p>
+                <p>Дата записи: {{ enrollment.enrollment_date|date:"d.m.Y" }}</p>
+                <a href="{% url 'course_detail' enrollment.course.slug %}" class="btn btn-small">Перейти к курсу</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% elif student.role == 'TEACHER' %}
+    <div class="profile-teacher">
+        <h3>Мои курсы (преподаватель)</h3>
+        <a href="{% url 'teacher_dashboard' %}" class="btn btn-primary">Перейти в дашборд преподавателя</a>
+    </div>
+    {% elif student.role == 'ADMIN' %}
+    <div class="profile-admin">
+        <h3>Административная панель</h3>
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-primary">Перейти в панель администратора</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "fefu_lab/base.html" %}
+{% block title %}Редактирование профиля{% endblock %}
+{% block heading %}Редактирование профиля{% endblock %}
+{% block content %}
+<div class="edit-profile-container">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-grid">
+            <div class="form-section">
+                <h3>Основная информация</h3>
+                <div class="form-group">
+                    {{ form.first_name.label_tag }}
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <div class="error">{{ form.first_name.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.last_name.label_tag }}
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <div class="error">{{ form.last_name.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.email.label_tag }}
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <div class="error">{{ form.email.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.phone.label_tag }}
+                    {{ form.phone }}
+                    {% if form.phone.errors %}
+                        <div class="error">{{ form.phone.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="form-section">
+                <h3>Дополнительная информация</h3>
+                <div class="form-group">
+                    {{ form.faculty.label_tag }}
+                    {{ form.faculty }}
+                    {% if form.faculty.errors %}
+                        <div class="error">{{ form.faculty.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.bio.label_tag }}
+                    {{ form.bio }}
+                    {% if form.bio.errors %}
+                        <div class="error">{{ form.bio.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.avatar.label_tag }}
+                    {{ form.avatar }}
+                    {% if form.avatar.errors %}
+                        <div class="error">{{ form.avatar.errors }}</div>
+                    {% endif %}
+                    {% if student.avatar %}
+                        <p>Текущий аватар: <img src="{{ student.avatar.url }}" alt="Аватар" style="width: 50px; height: 50px; border-radius: 50%;"></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+            <a href="{% url 'profile' %}" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

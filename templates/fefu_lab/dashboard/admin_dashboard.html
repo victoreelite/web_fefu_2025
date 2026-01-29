@@ -1,0 +1,136 @@
+{% extends "fefu_lab/base.html" %}
+{% block title %}Панель администратора{% endblock %}
+{% block heading %}Панель администратора{% endblock %}
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h2>Административная панель</h2>
+        <p class="role-badge">Администратор</p>
+    </div>
+    <div class="dashboard-stats">
+        <div class="stat-card-dashboard">
+            <h3>{{ stats.total_students }}</h3>
+            <p>Студентов</p>
+        </div>
+        <div class="stat-card-dashboard">
+            <h3>{{ stats.total_teachers }}</h3>
+            <p>Преподавателей</p>
+        </div>
+        <div class="stat-card-dashboard">
+            <h3>{{ stats.total_courses }}</h3>
+            <p>Курсов</p>
+        </div>
+        <div class="stat-card-dashboard">
+            <h3>{{ stats.active_enrollments }}</h3>
+            <p>Активных записей</p>
+        </div>
+    </div>
+    <div class="dashboard-grid">
+        <div class="dashboard-table">
+            <h3>Последние студенты</h3>
+            {% if recent_students %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Имя</th>
+                        <th>Email</th>
+                        <th>Факультет</th>
+                        <th>Дата регистрации</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in recent_students %}
+                    <tr>
+                        <td>{{ student.full_name }}</td>
+                        <td>{{ student.email }}</td>
+                        <td>{{ student.get_faculty_display_name }}</td>
+                        <td>{{ student.created_at|date:"d.m.Y" }}</td>
+                        <td>
+                            <a href="{% url 'student_profile' student.id %}" class="btn btn-small">Профиль</a>
+                            <a href="/admin/fefu_lab/student/{{ student.id }}/change/" class="btn btn-small btn-secondary" target="_blank">Редактировать</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="no-data">Нет данных о студентах</p>
+            {% endif %}
+            <div class="view-all">
+                <a href="/admin/fefu_lab/student/" class="btn btn-outline" target="_blank">Все студенты</a>
+            </div>
+        </div>
+        <div class="dashboard-table">
+            <h3>Последние курсы</h3>
+            {% if recent_courses %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Курс</th>
+                        <th>Преподаватель</th>
+                        <th>Уровень</th>
+                        <th>Создан</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in recent_courses %}
+                    <tr>
+                        <td>{{ course.title|truncatechars:30 }}</td>
+                        <td>
+                            {% if course.instructor %}
+                                {{ course.instructor.full_name }}
+                            {% else %}
+                                Не назначен
+                            {% endif %}
+                        </td>
+                        <td>{{ course.get_level_display }}</td>
+                        <td>{{ course.created_at|date:"d.m.Y" }}</td>
+                        <td>
+                            <a href="{% url 'course_detail' course.slug %}" class="btn btn-small">Просмотр</a>
+                            <a href="/admin/fefu_lab/course/{{ course.id }}/change/" class="btn btn-small btn-secondary" target="_blank">Редактировать</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="no-data">Нет данных о курсах</p>
+            {% endif %}
+            <div class="view-all">
+                <a href="/admin/fefu_lab/course/" class="btn btn-outline" target="_blank">Все курсы</a>
+            </div>
+        </div>
+    </div>
+    <div class="admin-quick-links">
+        <h3>Быстрые ссылки</h3>
+        <div class="links-grid">
+            <a href="/admin/" class="link-card" target="_blank">
+                <h4>Django Admin</h4>
+                <p>Полный доступ к админ-панели</p>
+            </a>
+            <a href="/admin/fefu_lab/student/add/" class="link-card" target="_blank">
+                <h4>Добавить студента</h4>
+                <p>Создать нового студента</p>
+            </a>
+            <a href="/admin/fefu_lab/course/add/" class="link-card" target="_blank">
+                <h4>Добавить курс</h4>
+                <p>Создать новый курс</p>
+            </a>
+            <a href="/admin/fefu_lab/instructor/add/" class="link-card" target="_blank">
+                <h4>Добавить преподавателя</h4>
+                <p>Создать нового преподавателя</p>
+            </a>
+            <a href="/admin/auth/user/add/" class="link-card" target="_blank">
+                <h4>Добавить пользователя</h4>
+                <p>Создать нового пользователя системы</p>
+            </a>
+            <a href="{% url 'profile' %}" class="link-card">
+                <h4>Мой профиль</h4>
+                <p>Перейти в личный кабинет</p>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
