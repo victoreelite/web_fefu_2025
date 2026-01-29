@@ -10,15 +10,45 @@
 <body>
     <div class="header">
         <div class="navigation">
-            <a href="/">Главная</a>
-            <a href="/about/">About</a>
-            <a href="/feedback/">Feedback</a> | 
-            <a href="/register/">Register</a> |
-            <a href="/login/">Login</a> |
-            <a href="/student/1/">Students</a> |
-            <a href="/course/python-basic/">Course Python</a>
+            <!-- Основные ссылки для всех -->
+            <a href="/">Главная</a> | 
+            <a href="/about/">About</a> | 
+            <a href="/course/python-basics/">Курсы</a> |
+            <!-- Динамическая навигация в зависимости от авторизации -->
+            {% if user.is_authenticated %}
+                <!-- Авторизованный пользователь -->
+                <a href="{% url 'profile' %}">Личный кабинет</a> |
+                <!-- Проверка роли для дашбордов -->
+                {% if user.student_profile.role == 'TEACHER' %}
+                    <a href="{% url 'teacher_dashboard' %}">Дашборд</a> |
+                {% elif user.student_profile.role == 'ADMIN' %}
+                    <a href="{% url 'admin_dashboard' %}">Админка</a> |
+                {% endif %}
+                <!-- Ссылка на админ-панель Django для staff -->
+                {% if user.is_staff %}
+                    <a href="/admin/" target="_blank">Админ-панель</a> |
+                {% endif %}
+                <!-- Кнопка выхода с именем пользователя -->
+                <a href="{% url 'logout' %}">Выйти ({{ user.first_name|default:user.username }})</a>
+            {% else %}
+                <!-- Неавторизованный пользователь -->
+                <a href="{% url 'login' %}">Login</a> |
+                <a href="{% url 'register' %}">Register</a> |
+                <a href="/feedback/">Feedback</a>
+            {% endif %}
         </div>
     </div>
+    <!-- Сообщения (success, error, info) -->
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+            <button type="button" class="close" onclick="this.parentElement.style.display='none'">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
     <div class="container">
         {% block content %}{% endblock %}
     </div>
