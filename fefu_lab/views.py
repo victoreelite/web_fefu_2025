@@ -1,8 +1,18 @@
 from django.http import HttpResponse, Http404
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from .forms import FeedbackForm, RegistrationForm, LoginForm
 from .models import UserProfile, Feedback, Student, Course, Instructor, Enrollment
+from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib import messages
+from .forms import (
+    CustomUserCreationForm,
+    CustomAuthenticationForm,
+    ProfileUpdateForm,
+    PasswordChangeCustomForm
+)
 
 def home_page(request):
     # Статистика для главной страницы
@@ -59,6 +69,194 @@ class CourseView(View):
             return render(request, 'fefu_lab/course_detail.html', context)
         except Course.DoesNotExist:
             raise Http404("Курс не найден")
+
+def register_view(request):
+    #Регистрация нового пользователя
+    if request.user.is_authenticated:
+        return redirect('profile')
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            # Создаем профиль студента
+            student_profile = Student.objects.get(user=user)
+            student_profile.first_name = form.cleaned_data['first_name']
+            student_profile.last_name = form.cleaned_data['last_name']
+            student_profile.email = form.cleaned_data['email']
+            student_profile.save()
+            # Автоматически входим после регистрации
+            login(request, user)
+            messages.success(request, 'Регистрация прошла успешно! Добро пожаловать!')
+            return redirect('profile')
+    else:
+        form = CustomUserCreationForm()
+    return render(request, 'fefu_lab/registration/register.html', {
+        'form': form,
+        'title': 'Регистрация'
+    })
+
+def login_view(request):
+    #Вход в систему
+    if request.user.is_authenticated:
+        return redirect('profile')
+    if request.method == 'POST':
+        form = CustomAuthenticationForm(data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            messages.success(request, f'Добро пожаловать, {user.first_name}!')
+            # Перенаправляем на страницу, с которой пришли, или на профиль
+            next_url = request.GET.get('next', 'profile')
+            return redirect(next_url)
+        else:
+            messages.error(request, 'Неверный email или пароль')
+    else:
+        form = CustomAuthenticationForm()
+    return render(request, 'fefu_lab/registration/login.html', {
+        'form': form,
+        'title': 'Вход в систему'
+    })
+
+def logout_view(request):
+    #Выход из системы
+    if request.user.is_authenticated:
+        logout(request)
+        messages.success(request, 'Вы успешно вышли из системы')
+    return redirect('home')
+
+@login_required
+def profile_view(request):
+    #Личный кабинет пользователя
+    try:
+        student_profile = request.user.student_profile
+    except Student.DoesNotExist:
+        # Если профиль не существует, создаем его
+        student_profile = Student.objects.create(
+            user=request.user,
+            first_name=request.user.first_name,
+            last_name=request.user.last_name,
+            email=request.user.email,
+            role='STUDENT'
+        )
+    # Получаем активные записи на курсы для студентов
+    enrollments = None
+    if student_profile.role == 'STUDENT':
+        enrollments = student_profile.enrollments.filter(status='ACTIVE').select_related('course')
+    # Получаем курсы преподавателя
+    teacher_courses = None
+    if student_profile.role == 'TEACHER':
+        teacher_courses = student_profile.courses.all()
+    return render(request, 'fefu_lab/registration/profile.html', {
+        'student': student_profile,
+        'enrollments': enrollments,
+        'teacher_courses': teacher_courses,
+        'title': 'Личный кабинет'
+    })
+
+@login_required
+def profile_edit_view(request):
+    #Редактирование профиля
+    student_profile = get_object_or_404(Student, user=request.user)
+    if request.method == 'POST':
+        form = ProfileUpdateForm(request.POST, request.FILES, instance=student_profile, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Профиль успешно обновлен!')
+            return redirect('profile')
+    else:
+        form = ProfileUpdateForm(instance=student_profile, user=request.user)
+    return render(request, 'fefu_lab/registration/profile_edit.html', {
+        'form': form,
+        'title': 'Редактирование профиля'
+    })
+
+@login_required
+def password_change_view(request):
+    #Смена пароля
+    if request.method == 'POST':
+        form = PasswordChangeCustomForm(request.user, request.POST)
+        if form.is_valid():
+            form.save()
+            update_session_auth_hash(request, request.user)
+            messages.success(request, 'Пароль успешно изменен!')
+            return redirect('profile')
+    else:
+        form = PasswordChangeCustomForm(request.user)
+    return render(request, 'fefu_lab/registration/password_change.html', {
+        'form': form,
+        'title': 'Смена пароля'
+    })
+
+#DASHBOARDS
+
+def is_teacher(user):
+    #Проверка что пользователь преподаватель
+    try:
+        return user.student_profile.role == 'TEACHER'
+    except Student.DoesNotExist:
+        return False
+
+def is_admin(user):
+    #Проверка что пользователь администратор
+    try:
+        return user.student_profile.role == 'ADMIN'
+    except Student.DoesNotExist:
+        return False
+
+@login_required
+@user_passes_test(is_teacher, login_url='/login/')
+def teacher_dashboard_view(request):
+    #Дашборд преподавателя
+    student_profile = request.user.student_profile
+    courses = student_profile.courses.all()
+    # Собираем статистику по курсам
+    course_stats = []
+    for course in courses:
+        enrollments_count = course.enrollments.filter(status='ACTIVE').count()
+        course_stats.append({
+            'course': course,
+            'enrollments_count': enrollments_count,
+            'available_spots': course.max_students - enrollments_count
+        })
+    return render(request, 'fefu_lab/dashboard/teacher_dashboard.html', {
+        'course_stats': course_stats,
+        'title': 'Дашборд преподавателя'
+    })
+
+@login_required
+@user_passes_test(is_admin, login_url='/login/')
+def admin_dashboard_view(request):
+    #Дашборд администратора
+    stats = {
+        'total_students': Student.objects.filter(role='STUDENT').count(),
+        'total_teachers': Student.objects.filter(role='TEACHER').count(),
+        'total_courses': Course.objects.count(),
+        'total_enrollments': Enrollment.objects.count(),
+        'active_enrollments': Enrollment.objects.filter(status='ACTIVE').count(),
+    }
+    recent_students = Student.objects.filter(role='STUDENT').order_by('-created_at')[:5]
+    recent_courses = Course.objects.order_by('-created_at')[:5]
+    return render(request, 'fefu_lab/dashboard/admin_dashboard.html', {
+        'stats': stats,
+        'recent_students': recent_students,
+        'recent_courses': recent_courses,
+        'title': 'Панель администратора'
+    })
+
+@login_required
+def protected_page_view(request):
+    #Пример защищенной страницы (только для авторизованных)
+    return render(request, 'fefu_lab/protected_page.html', {
+        'title': 'Защищенная страница'
+    })
+
+@login_required
+@user_passes_test(lambda u: u.is_staff, login_url='/login/')
+def staff_only_view(request):
+    #Пример страницы только для staff
+    return render(request, 'fefu_lab/staff_only.html', {
+        'title': 'Только для персонала'
+    })
 
 def custom_404(request, exception):
     return render(request, 'fefu_lab/404.html', status=404)
