@@ -81,11 +81,13 @@ WSGI_APPLICATION = 'web_2025.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-if DJANGO_ENV == "production":
+USE_POSTGRES = bool(os.environ.get("DB_NAME"))
+
+if USE_POSTGRES:
     DB_NAME = os.environ.get("DB_NAME")
     DB_USER = os.environ.get("DB_USER")
     DB_PASSWORD = os.environ.get("DB_PASSWORD")
-    DB_HOST = os.environ.get("DB_HOST", "localhost")
+    DB_HOST = os.environ.get("DB_HOST", "db")  # важно: в Docker сервис базы называется db
     DB_PORT = os.environ.get("DB_PORT", "5432")
 
     if not all([DB_NAME, DB_USER, DB_PASSWORD]):
