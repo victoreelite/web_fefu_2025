@@ -1,0 +1,2 @@
+# Bash scripts must use LF (Unix)
+*.sh text eol=lf
